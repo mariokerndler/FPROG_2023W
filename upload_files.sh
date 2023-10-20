@@ -10,12 +10,4 @@ local_dir="."
 # Remote directory on the server where you want to upload the files
 remote_dir="."
 
-for file in "$local_dir"/*.hs; do
-    scp "$file" "$username@$server:$remote_dir"
-    
-    if [ $? -eq 0 ]; then
-        echo "Copied $file to $server:$remote_dir"
-    else
-        echo "Failed to copy $file to $server:$remote_dir"
-    fi
-done
+scp -r "$local_dir"/*.hs "$username@$server:$remote_dir"
