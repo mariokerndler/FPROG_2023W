@@ -1,7 +1,6 @@
 module UE1 where
 
 import Data.Char (isDigit)
-import GHC.Show ( intToDigit )
 
 ------------------------------------------------------------------------------------
 -- A1   
