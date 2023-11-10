@@ -107,13 +107,11 @@ instance Show Relation where
       showPairs [(a, b)] = "(" ++ show a ++ "," ++ show b ++ ")"
       showPairs ((a, b) : rest) = "(" ++ show a ++ "," ++ show b ++ ")" ++ "," ++ showPairs rest
 
-{-
 instance Read Relation where
   readsPrec _ s =
     case parseRelation s of
       Just rel -> [(rel, "")]
       Nothing -> error "Invalid Relation format"
--}
 
 ------------------------------------------------------------------------------------
 -- A3
@@ -178,79 +176,58 @@ instance Figur Kugel where
 ------------------------------------------------------------------------------------
 -- Hilfsfunktionen
 ------------------------------------------------------------------------------------
+-- Hilfsfunktionen zum konvertieren von String zu Strichzahlen
 fromString :: String -> Strichzahl
 fromString ['|'] = S'
 fromString ('|' : xs) = S $ fromString xs
 fromString _ = error "Invalider Character."
 
--- Funktion zur Vereinigung von Relationen
+-- Hilfsfunktionen zur Vereinigung von Relationen
 unionRelations :: Relation -> Relation -> Relation
 unionRelations (R r1) (R r2)
   | not $ ist_gueltig (R r1) = error "Relation 1 ist nicht gueltig."
   | not $ ist_gueltig (R r2) = error "Relation 2 ist nicht gueltig."
   | otherwise = R (nub (r1 ++ r2))
 
--- Funktion zur Verknüpfung von Relationen (Komposition)
+-- Hilfsfunktionen zur Verknüpfung von Relationen (Komposition)
 composeRelations :: Relation -> Relation -> Relation
 composeRelations (R r1) (R r2)
   | not $ ist_gueltig (R r1) = error "Relation 1 ist nicht gueltig."
   | not $ ist_gueltig (R r2) = error "Relation 2 ist nicht gueltig."
   | otherwise = R [(a, c) | (a, b1) <- r1, (b2, c) <- r2, b1 == b2]
 
+-- Hilfsfunktionen zum negieren von Strichzahlen
 negateStrichzahl :: Strichzahl -> Strichzahl
 negateStrichzahl S' = S'
 negateStrichzahl (S a) = S (negateStrichzahl a)
 
-{-
--- Function to parse a Relation from a string
+-- Hilfsfunktion zum konvertieren von String zu Relationen
 parseRelation :: String -> Maybe Relation
 parseRelation s =
   case stripBraces s of
     Just content -> Just (R (parsePairs content))
     Nothing -> Nothing
 
--- Function to strip the outer braces if they exist
+-- Hilfsfunktion zum entfernen der '{}'
 stripBraces :: String -> Maybe String
 stripBraces rel
   | head rel == '{' && last rel == '}' = Just (filter (`notElem` "{}") rel)
   | otherwise = Nothing
 
--- Function to parse pairs inside the braces
+-- Hilfsfunktion zum parsen von Paaren
 parsePairs :: String -> [(Strichzahl, Strichzahl)]
-parsePairs s = case break (== '}') s of
-  (pairStr, rest) ->
-    if null pairStr
-      then []
-      else case parsePair pairStr of
-        Just pair -> pair : parsePairs (dropWhile (== ',') rest)
-        Nothing -> error "Invalid pair format"
-
--- Function to parse a single pair
-parsePair :: String -> Maybe (Strichzahl, Strichzahl)
-parsePair s = case break (== ',') s of
-  (leftStr, ',' : rightStr) ->
-    case (parseStrichzahl leftStr, parseStrichzahl rightStr) of
-      (Just left, Just right) -> Just (left, right)
-      _ -> Nothing
-  _ -> Nothing
-
-parsePair' :: String -> (String, String)
-parsePair' input = (first, second)
+parsePairs s = map (bimap fromString fromString) pairs
   where
-    (firstPart, rest) = break (== ',') input
-    first = drop 1 firstPart -- drop the leading '('
-    second = takeWhile (/= ')') $ tail rest
+    pairs = splitPairs s
 
+-- Hilfsfunktion zum trennen von Paaren
 splitPairs :: String -> [(String, String)]
-splitPairs input = map parsePair' pairs
+splitPairs input = splitIntoPairs pairs
   where
     pairs = words $ map (\c -> if c == ',' || c == '(' || c == ')' then ' ' else c) input
 
--- Function to parse a Strichzahl
-parseStrichzahl :: String -> Maybe Strichzahl
-parseStrichzahl ['|'] = Just S'
-parseStrichzahl ('|' : xs) = case parseStrichzahl xs of
-  Just num -> Just (S num)
-  Nothing -> Nothing
-parseStrichzahl _ = Nothing
--}
+-- Hilfsfunktion zum trennen von Paaren
+splitIntoPairs :: [a] -> [(a, a)]
+splitIntoPairs [] = []
+splitIntoPairs (x : y : rest) = (x, y) : splitIntoPairs rest
+splitIntoPairs _ = error "Liste muss gerade Anzahl an Elementen besitzen."
