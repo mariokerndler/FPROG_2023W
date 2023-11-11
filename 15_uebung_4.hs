@@ -5,7 +5,6 @@ module UE4 where
 
 import Data.Foldable (find)
 import Data.List (nubBy)
-import Distribution.Simple.Program.HcPkg (register)
 
 ------------------------------------------------------------------------------------
 -- A1
