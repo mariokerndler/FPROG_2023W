@@ -48,29 +48,23 @@ instance Enum Zahl where
 instance Num Zahl where
   N + x = x
   x + N = x
-  P x + P y = P (x + y)
-  M x + M y = M (x + y)
-  P x + M y = if x >= y then P (x - y) else M (y - x)
-  M x + P y = if x >= y then M (x - y) else P (y - x)
+  P x + P y = P (P (x + y))
+  M x + M y = M (M (x + y))
+  P x + M y = P (M (x + y))
+  M x + P y = P (M (x + y))
 
   N * _ = N
   _ * N = N
-  P x * P y = P (x * y)
-  M x * M y = P (x * y)
-  P x * M y = M (x * y)
-  M x * P y = M (x * y)
+  x * y = toEnum (fromEnum x * fromEnum y)
 
   abs N = N
-  abs (P x) = P x
-  abs (M x) = P x
+  abs x = toEnum $ abs $ fromEnum x
 
   signum N = N
-  signum (P _) = P N
-  signum (M _) = M N
+  signum x = toEnum $ signum $ fromEnum x
 
   negate N = N
-  negate (P x) = M x
-  negate (M x) = P x
+  negate x = toEnum $ negate $ fromEnum x
 
   fromInteger n
     | n == 0 = N
@@ -79,15 +73,7 @@ instance Num Zahl where
 
 -- Instanz für Show
 instance Show Zahl where
-  show N = "0"
-  show (P x) = show $ showHelper 1 x
-  show (M x) = show (-showHelper 1 x)
-
--- Hilfsfunktion für Show
-showHelper :: Int -> Zahl -> Int
-showHelper acc N = acc
-showHelper acc (P x) = showHelper (acc + 1) x
-showHelper acc (M x) = showHelper (acc - 1) x
+  show n = show (fromEnum n)
 
 -- Instanz für Read
 instance Read Zahl where
