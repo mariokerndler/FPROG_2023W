@@ -31,7 +31,7 @@ instance Ord Strichzahl where
 -- Instanz fuer Enum
 instance Enum Strichzahl where
   toEnum n
-    | n < 1 = S'
+    | n <= 1 = S'
     | otherwise = S $ toEnum (n - 1)
   fromEnum S' = 1
   fromEnum (S a) = 1 + fromEnum a
@@ -39,25 +39,33 @@ instance Enum Strichzahl where
 -- Instanz fuer Num
 instance Num Strichzahl where
   S' + S' = S S'
-  S' + S b = S b
-  S a + S' = S a
+  S' + S b = S (S b)
+  S a + S' = S (S a)
   S a + S b = S (S a + b)
 
-  S' * _ = S'
-  _ * S' = S'
-  S a * S b = a * (S a * b) + S a
+  S' * S b = S b
+  S a * S' = S a
+  S a * S b = toEnum (intA * intB)
+    where
+      intA = fromEnum (S a)
+      intB = fromEnum (S b)
 
   abs a = a
 
-  signum S' = S'
-  signum a = a
+  signum a = S'
 
   fromInteger n
-    | n < 1 = S'
+    | n <= 1 = S'
     | otherwise = S $ fromInteger (n - 1)
 
   negate S' = S'
   negate (S a) = error "Negierung ist nicht definiert fuer natuerliche Zahlen."
+
+{-
+instance Bounded Strichzahl where
+  minBound = S'
+  maxBound = Unendlich?
+-}
 
 -- Instanz fuer Show
 instance Show Strichzahl where
@@ -100,7 +108,7 @@ instance Num Relation where
 
 instance Show Relation where
   show (R r)
-    | not $ ist_gueltig (R r) = error "Relation ist nicht gueltig."
+    | not $ ist_gueltig (R r) = error "Argument ungueltig."
     | otherwise = "{" ++ showPairs r ++ "}"
     where
       showPairs [] = ""
@@ -164,7 +172,7 @@ instance Figur Wuerfel where
   volumen wuerfel = kantenlaenge wuerfel ^ 3
 
 instance Figur Quader where
-  umfang quader = 4 * (langeSeite quader + kurzeSeite quader)
+  umfang quader = 4 * (langeSeite quader + kurzeSeite quader + hoehe quader)
   flaeche quader = 2 * (langeSeite quader * kurzeSeite quader + kurzeSeite quader * hoehe quader + langeSeite quader * hoehe quader)
   volumen quader = langeSeite quader * kurzeSeite quader * hoehe quader
 
