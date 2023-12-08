@@ -126,14 +126,14 @@ inspiziere' prog z von bis
 -- A.1.4
 inspiziere2 :: Programm -> Anfangszustand -> [Variable] -> Index -> Maybe String
 inspiziere2 prog z intVars index = case maybeZustand of
-  Just zust -> Just $ showZustand intVars zust
+  Just zust -> Just $ showZustandVariables intVars zust
   Nothing -> Nothing
   where
     maybeZustand = inspiziere prog z index
 
 inspiziere2' :: Programm -> Anfangszustand -> [Variable] -> Von -> Bis -> Maybe [String]
 inspiziere2' prog z intVars von bis = case maybeZustaende of
-  Just zust -> Just $ map (showZustand intVars) zust
+  Just zust -> Just $ map (showZustandVariables intVars) zust
   Nothing -> Nothing
   where
     maybeZustaende = inspiziere' prog z von bis
@@ -141,14 +141,14 @@ inspiziere2' prog z intVars von bis = case maybeZustaende of
 -- A.1.5
 inspiziere3 :: Programm -> Anfangszustand -> [Variable] -> Index -> Maybe [String]
 inspiziere3 prog z intVars index = case maybeZustand of
-  Just zustand -> Just (showZustand intVars z : [zustand])
+  Just zustand -> Just (showZustandVariables intVars z : [zustand])
   Nothing -> Nothing
   where
     maybeZustand = inspiziere2 prog z intVars index
 
 inspiziere3' :: Programm -> Anfangszustand -> [Variable] -> Von -> Bis -> Maybe [String]
 inspiziere3' prog z intVars von bis = case maybeZustande of
-  Just zustand -> Just (showZustand intVars z : zustand)
+  Just zustand -> Just (showZustandVariables intVars z : zustand)
   Nothing -> Nothing
   where
     maybeZustande = inspiziere2' prog z intVars von bis
@@ -233,36 +233,36 @@ ergebnisZustaende :: [Zustand]
 ergebnisZustaende = int meinProgramm meinAnfangszustand
 
 testA11 :: IO ()
-testA11 = print $ map showZustandAll ergebnisZustaende
+testA11 = putStrLn $ showZustand' ergebnisZustaende
 
 testA12 :: Index -> IO ()
 testA12 x = case inspiziere meinProgramm meinAnfangszustand x of
-  Just zustand -> print $ showZustandAll zustand
+  Just zustand -> putStrLn $ showZustand zustand
   Nothing -> putStrLn "Der angegebene Index existiert nicht."
 
 testA13 :: Von -> Bis -> IO ()
 testA13 von bis = case inspiziere' meinProgramm meinAnfangszustand von bis of
-  Just zustand -> print $ map showZustandAll zustand
+  Just zustand -> putStrLn $ showZustand' zustand
   Nothing -> putStrLn "Der angegebene Index existiert nicht."
 
 testA14_1 :: Index -> [Variable] -> IO ()
 testA14_1 index vars = case inspiziere2 meinProgramm meinAnfangszustand vars index of
-  Just zustand -> print zustand
+  Just zustand -> putStrLn zustand
   Nothing -> putStrLn "Der angegebene Index existiert nicht."
 
 testA14_2 :: Von -> Bis -> [Variable] -> IO ()
 testA14_2 von bis vars = case inspiziere2' meinProgramm meinAnfangszustand vars von bis of
-  Just zustand -> print zustand
+  Just zustand -> putStrLn $ unlines zustand
   Nothing -> putStrLn "Der angegebene Index existiert nicht."
 
 testA15_1 :: Index -> [Variable] -> IO ()
 testA15_1 index vars = case inspiziere3 meinProgramm meinAnfangszustand vars index of
-  Just zustand -> print zustand
+  Just zustand -> putStrLn $ unlines zustand
   Nothing -> putStrLn "Der angegebene Index existiert nicht."
 
 testA15_2 :: Von -> Bis -> [Variable] -> IO ()
 testA15_2 von bis vars = case inspiziere3' meinProgramm meinAnfangszustand vars von bis of
-  Just zustand -> print zustand
+  Just zustand -> putStrLn $ unlines zustand
   Nothing -> putStrLn "Der angegebene Index existiert nicht."
 
 -- Beispiel A2
@@ -306,14 +306,17 @@ testA2_Fail = case solvedPyramid of
 updateZustand :: Variable -> Integer -> Zustand -> Zustand
 updateZustand var wert z v = if v == var then toEnum $ fromIntegral wert else z v
 
-showZustandAll :: Zustand -> String
-showZustandAll z = "{ " ++ showVariables ++ " }"
+showZustand :: Zustand -> String
+showZustand z = "{ " ++ showVariables ++ " }"
   where
     variables = [A, B, C, R, S, T, X, Y, Z]
     showVariables = intercalate ", " [show v ++ " -> " ++ show (z v) | v <- variables]
 
-showZustand :: [Variable] -> Zustand -> String
-showZustand vars z = "{ " ++ showVariables ++ " }"
+showZustand' :: [Zustand] -> String
+showZustand' z = unlines $ map showZustand z
+
+showZustandVariables :: [Variable] -> Zustand -> String
+showZustandVariables vars z = "{ " ++ showVariables ++ " }"
   where
     showVariables = intercalate ", " [show v ++ " -> " ++ show (z v) | v <- vars]
 
