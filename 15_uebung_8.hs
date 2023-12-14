@@ -4,7 +4,7 @@
 module UE8 where
 
 import Data.Char (isDigit)
-import Data.List (permutations, transpose)
+import Data.List (intercalate, nub, permutations, transpose)
 import Debug.Trace (trace)
 
 div_and_conquer ::
@@ -210,7 +210,9 @@ type Weihnachtsbaumreihe = [Weihnachtsbaum]
 
 type Weihnachtsbaumflaeche = [Weihnachtsbaumreihe]
 
-data Richtung = Links | Rechts | Unten | Oben deriving (Show, Eq)
+type Permutation = [Int]
+
+type Permutations = [Permutation]
 
 data MA2412Problem = MA2412Problem
   { weihnachtsbaumflaeche :: Weihnachtsbaumflaeche,
@@ -219,59 +221,153 @@ data MA2412Problem = MA2412Problem
     vorgabenUnten :: [Int],
     vorgabenOben :: [Int]
   }
-  deriving (Show)
 
-istLoesung :: MA2412Problem -> Bool
-istLoesung problem =
-  and
-    [ istLoesungInRichtung Links,
-      istLoesungInRichtung Rechts,
-      istLoesungInRichtung Unten,
-      istLoesungInRichtung Oben
-    ]
+instance Show MA2412Problem where
+  show problem =
+    "Weihnachtsbaumflaeche:\n"
+      ++ intercalate "\n" (map showRow $ weihnachtsbaumflaeche problem)
+      ++ "\nVorgabenLinks: "
+      ++ showList (vorgabenLinks problem)
+      ++ "\nVorgabenRechts: "
+      ++ showList (vorgabenRechts problem)
+      ++ "\nVorgabenUnten: "
+      ++ showList (vorgabenUnten problem)
+      ++ "\nVorgabenOben: "
+      ++ showList (vorgabenOben problem)
+    where
+      showRow :: Weihnachtsbaumreihe -> String
+      showRow row = unwords (map show row)
+
+      showList :: [Int] -> String
+      showList = intercalate ", " . map show
+
+solveMA2412Problem :: MA2412Problem -> Maybe MA2412Problem
+solveMA2412Problem problem
+  | not (checkIfInputIsWohlgeformt problem) = Nothing
+  | length allRowPermutations <= length allColPermutations = getProblem $ getValidProblem $ genProblem rowFlaechen
+  | otherwise = getProblem $ getValidProblem $ genProblem colFlaechen
   where
-    istLoesungInRichtung :: Richtung -> Bool
-    istLoesungInRichtung richtung =
-      and $
-        zipWith
-          (\vorgabe reihe -> vorgabe == trace ("Reihe: " ++ show reihe ++ ", Richtung: " ++ show richtung ++ ", Vorgabe: " ++ show vorgabe ++ ", Result: " ++ show (anzahlSichtbareBaeume richtung reihe)) anzahlSichtbareBaeume richtung reihe)
-          (vorgaben richtung)
-          (weihnachtsbaumflaeche problem)
+    convertedProblem = createProblem problem (map (map (`div` 10)) (weihnachtsbaumflaeche problem))
+    allRowPermutations = filterRows convertedProblem
+    allColPermutations = filterCols convertedProblem
+    rowFlaechen = sequence allRowPermutations
+    colFlaechen = map transpose (sequence allColPermutations)
 
-    anzahlSichtbareBaeume :: Richtung -> Weihnachtsbaumreihe -> Int
-    anzahlSichtbareBaeume Links l@(x : xs) = length $ filter (> x) l
-    anzahlSichtbareBaeume Rechts l@(x : xs) = length $ reverse (filter (> x) l)
-    anzahlSichtbareBaeume Unten l@(x : xs) = length $ filter (> x) l
-    anzahlSichtbareBaeume Oben l@(x : xs) = length $ reverse (filter (> x) l)
+    genProblem = map (createProblem convertedProblem)
+    getValidProblem = filter checkIfCorrect
 
-    vorgaben :: Richtung -> [Int]
-    vorgaben Links = vorgabenLinks problem
-    vorgaben Rechts = vorgabenRechts problem
-    vorgaben Unten = vorgabenUnten problem
-    vorgaben Oben = vorgabenOben problem
+    getProblem [] = Nothing
+    getProblem (x : _) = Just $ createProblem x (map (map (* 10)) (weihnachtsbaumflaeche x))
 
-countGreaterThanHead :: Weihnachtsbaumreihe -> Int -> Int
-countGreaterThanHead [] _ = 0
-countGreaterThanHead (0 : xs) lastMax = 1 + countGreaterThanHead xs lastMax
-countGreaterThanHead (x : xs) lastMax
-  | x == lastMax = trace ("calling countGreaterThanHead case 1 x = " ++ show x ++ ", lastMax = " ++ show lastMax) 1
-  | x >= lastMax = trace ("calling countGreaterThanHead case 2 x = " ++ show x ++ ", lastMax = " ++ show lastMax) 1 + countGreaterThanHead xs x
-  | otherwise = trace ("calling countGreaterThanHead case 3 x = " ++ show x ++ ", lastMax = " ++ show lastMax) 0
+createProblem :: MA2412Problem -> [Weihnachtsbaumreihe] -> MA2412Problem
+createProblem problem flaeche =
+  MA2412Problem
+    { weihnachtsbaumflaeche = flaeche,
+      vorgabenLinks = vorgabenLinks problem,
+      vorgabenRechts = vorgabenRechts problem,
+      vorgabenUnten = vorgabenUnten problem,
+      vorgabenOben = vorgabenOben problem
+    }
 
-t :: Weihnachtsbaumreihe -> Int -> Int
-t [] _ = 0
-t (x : xs) max
-  | x > max = 1 + t xs x
-  | otherwise = 0
+checkIfCorrect :: MA2412Problem -> Bool
+checkIfCorrect problem = rowsCorrect && colsCorrect && validRows && validCols
+  where
+    flaeche = weihnachtsbaumflaeche problem
+    constraintLinks = vorgabenLinks problem
+    constraintRechts = vorgabenRechts problem
+    constraintOben = vorgabenOben problem
+    constraintUnten = vorgabenUnten problem
 
-t1 :: Weihnachtsbaumreihe
-t1 = [10, 0, 30, 0, 50]
+    rowsCorrect = all (== True) $ f flaeche constraintLinks constraintRechts
+    colsCorrect = all (== True) $ f (transpose flaeche) constraintOben constraintUnten
 
-t2 :: Weihnachtsbaumreihe
-t2 = [50, 0, 10, 0, 30]
+    validRows = all ((== False) . hasDuplicates) flaeche
+    validCols = all ((== False) . hasDuplicates) (transpose flaeche)
 
-t3 :: Weihnachtsbaumreihe
-t3 = [50, 50, 10, 0, 30]
+    -- Checks if a row/column is correct
+    t x a b = all (== True) [countTrees x 0 == a, countTrees (reverse x) 0 == b]
+
+    -- Checks if all rows/column are correct
+    f [] [] [] = []
+    f (x : xs) (a : as) (b : bs) = t x a b : f xs as bs
+
+hasDuplicates :: [Int] -> Bool
+hasDuplicates xs = length (nub xs) /= length xs
+
+filterRows :: MA2412Problem -> [[[Int]]]
+filterRows problem = generateRowPermutations flaeche constraintLinks constraintRechts
+  where
+    flaeche = weihnachtsbaumflaeche problem
+    constraintLinks = vorgabenLinks problem
+    constraintRechts = vorgabenRechts problem
+
+filterCols :: MA2412Problem -> [[[Int]]]
+filterCols problem = generateRowPermutations flaeche constraintOben constraintUnten
+  where
+    flaeche = transpose $ weihnachtsbaumflaeche problem
+    constraintOben = vorgabenOben problem
+    constraintUnten = vorgabenUnten problem
+
+generateRowPermutations :: Weihnachtsbaumflaeche -> [Int] -> [Int] -> [[[Int]]]
+generateRowPermutations [] [] [] = []
+generateRowPermutations (x : xs) (a : as) (b : bs) = getPermutationsForRow x a b : generateRowPermutations xs as bs
+
+getPermutationsForRow :: Weihnachtsbaumreihe -> Int -> Int -> [Weihnachtsbaumreihe]
+getPermutationsForRow reihe = filterConstraint perm
+  where
+    perm = getPermutations reihe
+
+filterConstraint :: Permutations -> Int -> Int -> [Weihnachtsbaumreihe]
+filterConstraint [] _ _ = []
+filterConstraint (x : xs) a b
+  | all (== True) [countTrees x 0 == a, countTrees (reverse x) 0 == b] = x : filterConstraint xs a b
+  | otherwise = filterConstraint xs a b
+
+countTrees :: Weihnachtsbaumreihe -> Int -> Int
+countTrees [] _ = 0
+countTrees (x : xs) max
+  | x < max = countTrees xs max
+  | otherwise = 1 + countTrees xs x
+
+getPermutations :: Weihnachtsbaumreihe -> Permutations
+getPermutations lst = filterPermutations lst 0 perm
+  where
+    n = length lst
+    perm = permutations [1 .. n]
+
+-- Funktion zur Filterung von Permutationen basierend auf vorgegebenen Werten
+filterPermutations :: Weihnachtsbaumreihe -> Int -> Permutations -> Permutations
+filterPermutations [] _ perm = perm
+filterPermutations (0 : xs) n perm = filterPermutations xs (n + 1) perm
+filterPermutations (x : xs) n perm = filterPermutations xs (n + 1) (filterByIndex x n perm)
+
+-- Funktion zur Filterung von Permutationen basierend auf einem Index und Wert
+filterByIndex :: Int -> Int -> Permutations -> Permutations
+filterByIndex number index = filter (\lst -> length lst > index && lst !! index == number)
+
+checkIfInputIsWohlgeformt :: MA2412Problem -> Bool
+checkIfInputIsWohlgeformt problem =
+  correctLength
+    && allElementsValidRange
+    && correctConstraintLength
+    && allConstraintsValidRange
+  where
+    flaeche = weihnachtsbaumflaeche problem
+    constraintLinks = vorgabenLinks problem
+    constraintRechts = vorgabenRechts problem
+    constraintOben = vorgabenOben problem
+    constraintUnten = vorgabenUnten problem
+
+    flaecheDiv = map (map (`div` 10)) flaeche
+
+    n = length $ head flaecheDiv
+    correctLength = all (\row -> length row == n) flaecheDiv && length flaecheDiv == n
+    allElementsValidRange = all (all (\value -> value >= 0 && value <= n)) flaecheDiv
+
+    combinedConstraints = [constraintLinks, constraintRechts, constraintOben, constraintUnten]
+    correctConstraintLength = all (\row -> length row == n) combinedConstraints
+
+    allConstraintsValidRange = all (all (\value -> value >= 0 && value <= n)) combinedConstraints
 
 -- Beispiele A.8
 beispiel1 :: MA2412Problem
