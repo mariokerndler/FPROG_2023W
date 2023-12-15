@@ -5,7 +5,6 @@ module UE8 where
 
 import Data.Char (isDigit)
 import Data.List (intercalate, nub, permutations, transpose)
-import Debug.Trace (trace)
 
 div_and_conquer ::
   (p -> Bool) -> -- Ist das Problem einfach genug, um sofort gelöst werden zu können?
@@ -20,24 +19,28 @@ div_and_conquer is_simple_enough solve divide combine = dac
       | is_simple_enough pbi = solve pbi
       | otherwise = combine pbi (map dac (divide pbi))
 
+-- Datenstruktur für einen binären Baum
 data Tree a = Nil | Node (Tree a) a (Tree a) deriving (Eq)
 
+-- A.1.a: Minimum einer Liste
 minimum' :: Ord a => [a] -> a
 minimum' = div_and_conquer m_is_simple_enough m_solve m_divide m_combine
 
+-- A.1.b: Summe der ungeraden Zahlen in einer Liste
 odds :: Integral a => [a] -> a
 odds = div_and_conquer o_is_simple_enough o_solve o_divide o_combine
 
+-- A.1.c: Anzahl der Knoten in einem Baum
 nodes :: Tree a -> Integer
 nodes = div_and_conquer n_is_simple_enough n_solve n_divide n_combine
 
--- A.1.a
+-- A.1.a: Hilfsfunktionen für das Minimum einer Liste
 m_is_simple_enough :: Ord a => [a] -> Bool
 m_is_simple_enough list = length list <= 1
 
 m_solve :: Ord a => [a] -> a
 m_solve [x] = x
-m_solve _ = error "m_solve: the list should contain exactly one element"
+m_solve _ = error "m_solve: Die Liste sollte genau ein Element enthalten"
 
 m_divide :: Ord a => [a] -> [[a]]
 m_divide [] = []
@@ -49,7 +52,7 @@ m_divide xs = [take half xs, drop half xs]
 m_combine :: Ord a => [a] -> [a] -> a
 m_combine _ = minimum
 
--- A.1.b
+-- A.1.b: Hilfsfunktionen für die Summe der ungeraden Zahlen in einer Liste
 o_is_simple_enough :: Integral a => [a] -> Bool
 o_is_simple_enough list = length list <= 1
 
@@ -69,7 +72,7 @@ o_divide xs = [take half xs, drop half xs]
 o_combine :: Integral a => [a] -> [a] -> a
 o_combine _ = sum
 
--- A.1.c
+-- A.1.c: Hilfsfunktionen für die Anzahl der Knoten in einem Baum
 n_is_simple_enough :: Tree a -> Bool
 n_is_simple_enough Nil = True
 n_is_simple_enough Node {} = False
@@ -85,10 +88,11 @@ n_divide (Node l _ r) = [l, r]
 n_combine :: Tree a -> [Integer] -> Integer
 n_combine _ [x, y] = 1 + x + y
 
--- A.2
+-- A.2: Merge Sort
 merge_sort :: Ord a => [a] -> [a]
 merge_sort = div_and_conquer e_is_simple_enough e_solve e_divide e_combine
 
+-- A.2: Hilfsfunktionen für Merge Sort
 e_is_simple_enough :: Ord a => [a] -> Bool
 e_is_simple_enough ls = length ls <= 1
 
@@ -105,6 +109,7 @@ e_divide xs = [take half xs, drop half xs]
 e_combine :: Ord a => [a] -> [[a]] -> [a]
 e_combine _ [sorted1, sorted2] = merge sorted1 sorted2
 
+-- Hilfsfunktion für das Mergen von zwei sortierten Listen
 merge :: Ord a => [a] -> [a] -> [a]
 merge [] ys = ys
 merge xs [] = xs
@@ -112,94 +117,88 @@ merge (x : xs) (y : ys)
   | x <= y = x : merge xs (y : ys)
   | otherwise = y : merge (x : xs) ys
 
--- A.3
+-- A.3: Generiert einen Strom von Fibonacci-Zahlen
 generiere_fib_strom :: [Integer]
 generiere_fib_strom = 0 : 1 : zipWith (+) generiere_fib_strom (tail generiere_fib_strom)
 
--- A.4
+-- A.4: Approximiert die Exponentialfunktion
 type Epsilon = Double
 
 approximiere_exp :: Double -> Epsilon -> Double
 approximiere_exp x epsilon = sum $ exp_selektor epsilon $ exp_generator x
 
+-- Hilfsfunktion: Generiert eine Liste von Exponential-Termen
 exp_generator :: Double -> [Double]
 exp_generator x = [x ^ n / fromIntegral (fakultaet n) | n <- [0 ..]]
 
+-- Hilfsfunktion: Selektiert Teile der Exponential-Terme bis die Genauigkeit erreicht ist
 exp_selektor :: Epsilon -> [Double] -> [Double]
 exp_selektor epsilon exp = take n exp
   where
     n = head [n | n <- [2 ..], abs (sum (take n exp) - sum (take (n - 1) exp)) <= epsilon]
 
+-- Hilfsfunktion: Berechnet die Fakultät einer Zahl
 fakultaet :: Integer -> Integer
 fakultaet n
   | n == 0 = 1
   | otherwise = n * fakultaet (n - 1)
 
--- A.5.a
+-- A.5.a: Generiert einen unendlichen Strom von Wörtern
 type Woerterstrom = [String]
-
-{-
-generiere_woerter :: Woerterstrom
-generiere_woerter = "" : go [""]
-  where
-    go current@(w : ws) = nextW : go (nextW : current)
-      where
-        nextW = incrementWord w
-
-incrementWord :: String -> String
-incrementWord [] = "a"
-incrementWord (c : cs)
-  | c == 'c' = 'a' : incrementWord cs
-  | otherwise = succ c : cs
--}
 
 generiere_woerter :: Woerterstrom
 generiere_woerter = "" : wort_gen ['a', 'b', 'c']
 
--- A.5.b
+-- A.5.b: Filtert Wörter im Strom nach der Anzahl des Buchstabens 'a' und Primzahlen
 filtere_prim_a :: Woerterstrom -> Woerterstrom
 filtere_prim_a = filter (isPrim . anzahl_a 'a')
 
+-- Hilfsfunktion: Zählt die Anzahl eines bestimmten Buchstabens in einem Wort
 anzahl_a :: Char -> String -> Int
 anzahl_a ch = length . filter (== ch)
 
+-- Hilfsfunktion: Überprüft, ob eine Zahl eine Primzahl ist
 isPrim :: Int -> Bool
 isPrim n
   | n <= 1 = False
   | otherwise = all (\x -> n `mod` x /= 0) [2 .. intSqrt n]
 
+-- Hilfsfunktion: Berechnet die Quadratwurzel einer ganzen Zahl
 intSqrt :: Int -> Int
 intSqrt = floor . sqrt . fromIntegral
 
--- A.6.a
+-- A.6.a: Filtert Palindrome aus dem Wortstrom
 filtere_palindrome :: Woerterstrom -> Woerterstrom
 filtere_palindrome = filter istPalindrom
 
+-- Hilfsfunktion: Überprüft, ob ein Wort ein Palindrom ist
 istPalindrom :: String -> Bool
 istPalindrom word = word == reverse word
 
--- A.6.b
+-- A.6.b: Wandelt alle Buchstaben in Großbuchstaben um
 type Wort = String
 
 transf :: Woerterstrom -> Woerterstrom
 transf = map transfEinzelnesWort
 
+-- Hilfsfunktion: Wandelt ein einzelnes Wort in Großbuchstaben um
 transfEinzelnesWort :: Wort -> Wort
 transfEinzelnesWort = map toUpper
 
--- Hierbei handelt es sich um eine Hilfsfunktion, um den Großbuchstaben zu erhalten
+-- Hilfsfunktion: Wandelt einen Kleinbuchstaben in einen Großbuchstaben um
 toUpper :: Char -> Char
 toUpper ch
   | 'a' <= ch && ch <= 'z' = toEnum (fromEnum ch - fromEnum 'a' + fromEnum 'A')
   | otherwise = ch
 
--- A.7
+-- A.7: Generiert Wörter basierend auf einer Liste von Zeichen
 wort_gen :: [Char] -> [[Char]]
 wort_gen [] = []
 wort_gen chars
   | any isDigit chars = error "Ungueltige Eingabe."
   | otherwise = concatMap (`replicateM` chars) [1 ..]
   where
+    -- Hilfsfunktion: Reproduziert eine Liste von Zeichen mit verschiedenen Längen
     replicateM n = sequence . replicate n
 
 -- A.8
@@ -241,6 +240,7 @@ instance Show MA2412Problem where
       showList :: [Int] -> String
       showList = intercalate ", " . map show
 
+-- Löst ein MA2412Problem, gibt das gelöste Problem oder 'Nothing' zurück
 solveMA2412Problem :: MA2412Problem -> Maybe MA2412Problem
 solveMA2412Problem problem
   | not (checkIfInputIsWohlgeformt problem) = Nothing
@@ -259,6 +259,7 @@ solveMA2412Problem problem
     getProblem [] = Nothing
     getProblem (x : _) = Just $ createProblem x (map (map (* 10)) (weihnachtsbaumflaeche x))
 
+-- Erstellt ein neues MA2412Problem mit aktualisierter Weihnachtsbaumfläche
 createProblem :: MA2412Problem -> [Weihnachtsbaumreihe] -> MA2412Problem
 createProblem problem flaeche =
   MA2412Problem
@@ -269,6 +270,7 @@ createProblem problem flaeche =
       vorgabenOben = vorgabenOben problem
     }
 
+-- Überprüft, ob ein MA2412Problem korrekt gelöst ist
 checkIfCorrect :: MA2412Problem -> Bool
 checkIfCorrect problem = rowsCorrect && colsCorrect && validRows && validCols
   where
@@ -284,16 +286,18 @@ checkIfCorrect problem = rowsCorrect && colsCorrect && validRows && validCols
     validRows = all ((== False) . hasDuplicates) flaeche
     validCols = all ((== False) . hasDuplicates) (transpose flaeche)
 
-    -- Checks if a row/column is correct
+    -- Überprüft, ob eine Reihe/Spalte korrekt ist
     t x a b = all (== True) [countTrees x 0 == a, countTrees (reverse x) 0 == b]
 
-    -- Checks if all rows/column are correct
+    -- Überprüft, ob alle Reihen/Spalten korrekt sind
     f [] [] [] = []
     f (x : xs) (a : as) (b : bs) = t x a b : f xs as bs
 
+-- Überprüft, ob ein Weihnachtsbaumreihe Duplikate enthält
 hasDuplicates :: [Int] -> Bool
 hasDuplicates xs = length (nub xs) /= length xs
 
+-- Filtert die möglichen Reihen-Permutationen für ein Problem
 filterRows :: MA2412Problem -> [[[Int]]]
 filterRows problem = generateRowPermutations flaeche constraintLinks constraintRechts
   where
@@ -301,6 +305,7 @@ filterRows problem = generateRowPermutations flaeche constraintLinks constraintR
     constraintLinks = vorgabenLinks problem
     constraintRechts = vorgabenRechts problem
 
+-- Filtert die möglichen Spalten-Permutationen für ein Problem
 filterCols :: MA2412Problem -> [[[Int]]]
 filterCols problem = generateRowPermutations flaeche constraintOben constraintUnten
   where
@@ -308,43 +313,49 @@ filterCols problem = generateRowPermutations flaeche constraintOben constraintUn
     constraintOben = vorgabenOben problem
     constraintUnten = vorgabenUnten problem
 
+-- Generiert die möglichen Permutationen für eine Weihnachtsbaumreihe
 generateRowPermutations :: Weihnachtsbaumflaeche -> [Int] -> [Int] -> [[[Int]]]
 generateRowPermutations [] [] [] = []
 generateRowPermutations (x : xs) (a : as) (b : bs) = getPermutationsForRow x a b : generateRowPermutations xs as bs
 
+-- Gibt alle möglichen Permutationen für eine Weihnachtsbaumreihe zurück
 getPermutationsForRow :: Weihnachtsbaumreihe -> Int -> Int -> [Weihnachtsbaumreihe]
 getPermutationsForRow reihe = filterConstraint perm
   where
     perm = getPermutations reihe
 
+-- Filtert Permutationen basierend auf vorgegebenen Werten
 filterConstraint :: Permutations -> Int -> Int -> [Weihnachtsbaumreihe]
 filterConstraint [] _ _ = []
 filterConstraint (x : xs) a b
   | all (== True) [countTrees x 0 == a, countTrees (reverse x) 0 == b] = x : filterConstraint xs a b
   | otherwise = filterConstraint xs a b
 
+-- Zählt die Weihnachtsbäume in einer Weihnachtsbaumreihe
 countTrees :: Weihnachtsbaumreihe -> Int -> Int
 countTrees [] _ = 0
 countTrees (x : xs) max
   | x < max = countTrees xs max
   | otherwise = 1 + countTrees xs x
 
+-- Gibt alle Permutationen für eine Weihnachtsbaumreihe zurück
 getPermutations :: Weihnachtsbaumreihe -> Permutations
 getPermutations lst = filterPermutations lst 0 perm
   where
     n = length lst
     perm = permutations [1 .. n]
 
--- Funktion zur Filterung von Permutationen basierend auf vorgegebenen Werten
+-- Filtert Permutationen basierend auf Index und Wert
 filterPermutations :: Weihnachtsbaumreihe -> Int -> Permutations -> Permutations
 filterPermutations [] _ perm = perm
 filterPermutations (0 : xs) n perm = filterPermutations xs (n + 1) perm
 filterPermutations (x : xs) n perm = filterPermutations xs (n + 1) (filterByIndex x n perm)
 
--- Funktion zur Filterung von Permutationen basierend auf einem Index und Wert
+-- Filtert Permutationen basierend auf Index und Wert
 filterByIndex :: Int -> Int -> Permutations -> Permutations
 filterByIndex number index = filter (\lst -> length lst > index && lst !! index == number)
 
+-- Überprüft, ob die Eingabe für ein MA2412Problem wohlgeformt ist
 checkIfInputIsWohlgeformt :: MA2412Problem -> Bool
 checkIfInputIsWohlgeformt problem =
   correctLength
@@ -370,6 +381,7 @@ checkIfInputIsWohlgeformt problem =
     allConstraintsValidRange = all (all (\value -> value >= 0 && value <= n)) combinedConstraints
 
 -- Beispiele A.8
+-- Weihnachtsbaumraetsel mit n=5
 beispiel1 :: MA2412Problem
 beispiel1 =
   MA2412Problem
@@ -386,6 +398,7 @@ beispiel1 =
       vorgabenOben = [5, 4, 3, 2, 1]
     }
 
+-- Weihnachtsbaumraetsel mit n=5 und bereits geloest
 beispiel2 :: MA2412Problem
 beispiel2 =
   MA2412Problem
@@ -402,6 +415,118 @@ beispiel2 =
       vorgabenOben = [5, 4, 3, 2, 1]
     }
 
+-- Weihnachtsbaumraetsel mit n=5 und nicht akzeptierten Werten
+beispiel3 :: MA2412Problem
+beispiel3 =
+  MA2412Problem
+    { weihnachtsbaumflaeche =
+        [ [10, 0, -30, 0, 50],
+          [0, 300, 0, 50, 0],
+          [0, 0, 0, 1, 70],
+          [40, -50, 0, 20, 0],
+          [50, 0, 20, 0, 40]
+        ],
+      vorgabenLinks = [5, 4, 3, 2, 1],
+      vorgabenRechts = [1, 2, 2, 2, 2],
+      vorgabenUnten = [1, 2, 2, 2, 2],
+      vorgabenOben = [5, 4, 3, 2, 1]
+    }
+
+-- Weihnachtsbaumraetsel mit n=5 und nicht quadratischer Flaeche
+beispiel4 :: MA2412Problem
+beispiel4 =
+  MA2412Problem
+    { weihnachtsbaumflaeche =
+        [ [10, 0, 30, 0, 50],
+          [0, 30, 0, 50, 0],
+          [0, 0, 0, 10, 20, 80],
+          [40, 50, 0, 20, 0],
+          [50, 0, 20, 0, 40]
+        ],
+      vorgabenLinks = [5, 4, 3, 2, 1],
+      vorgabenRechts = [1, 2, 2, 2, 2],
+      vorgabenUnten = [1, 2, 2, 2, 2],
+      vorgabenOben = [5, 4, 3, 2, 1]
+    }
+
+-- Weihnachtsbaumraetsel mit n=5 und inkorrekten vorgegebenen Werten
+beispiel5 :: MA2412Problem
+beispiel5 =
+  MA2412Problem
+    { weihnachtsbaumflaeche =
+        [ [10, 0, 30, 0, 50],
+          [10, 30, 40, 50, 0],
+          [0, 0, 0, 10, 20],
+          [40, 50, 0, 20, 0],
+          [50, 0, 20, 10, 40]
+        ],
+      vorgabenLinks = [5, 4, 3, 2, 1],
+      vorgabenRechts = [1, 2, 2, 2, 2],
+      vorgabenUnten = [1, 2, 2, 2, 2],
+      vorgabenOben = [5, 4, 3, 2, 1]
+    }
+
+-- Weihnachtsbaumraetsel mit n=5 und keinen vorgegebenen Werten
+beispiel6 :: MA2412Problem
+beispiel6 =
+  MA2412Problem
+    { weihnachtsbaumflaeche =
+        [ [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0]
+        ],
+      vorgabenLinks = [5, 3, 4, 2, 1],
+      vorgabenRechts = [1, 2, 2, 2, 2],
+      vorgabenUnten = [1, 2, 2, 4, 2],
+      vorgabenOben = [5, 4, 3, 2, 1]
+    }
+
+-- Weihnachtsbaumraetsel mit n=10 und vorgegebenen Werten
+beispiel7 :: MA2412Problem
+beispiel7 =
+  MA2412Problem
+    { weihnachtsbaumflaeche =
+        [ [10, 20, 30, 40, 50, 60, 70, 90, 0, 0],
+          [0, 10, 50, 60, 70, 80, 0, 0, 30, 0],
+          [0, 20, 10, 40, 70, 80, 0, 40, 0, 0],
+          [60, 70, 80, 40, 20, 10, 80, 0, 0, 0],
+          [50, 60, 80, 90, 20, 10, 50, 0, 0, 0],
+          [70, 80, 90, 10, 20, 40, 100, 0, 0, 0],
+          [80, 70, 50, 30, 20, 10, 100, 0, 0, 0],
+          [10, 20, 30, 40, 50, 60, 70, 80, 0, 0],
+          [20, 30, 40, 50, 60, 70, 80, 0, 0, 0],
+          [90, 80, 70, 50, 40, 30, 20, 10, 0, 0]
+        ],
+      vorgabenLinks = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+      vorgabenRechts = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+      vorgabenUnten = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+      vorgabenOben = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+    }
+
+-- Weihnachtsbaumraetsel mit n=10 und keinen vorgegebenen Werten
+beispiel8 :: MA2412Problem
+beispiel8 =
+  MA2412Problem
+    { weihnachtsbaumflaeche =
+        [ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ],
+      vorgabenLinks = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+      vorgabenRechts = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+      vorgabenUnten = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+      vorgabenOben = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+    }
+
 -- Tests
 runAllTests :: IO ()
 runAllTests = do
@@ -412,6 +537,7 @@ runAllTests = do
   runA5tests
   runA6tests
   runA7tests
+  runA8tests
 
 -- A.1
 testA1_Minimum :: Ord a => [a] -> a -> Bool
@@ -445,6 +571,9 @@ tree2 = Node Nil "Test" Nil
 {-
 Input: [], Expected Output: error "Input should have at least one element."
 -}
+
+-- Tests
+-- Führt alle Testfunktionen für die verschiedenen Teilaufgaben aus.
 runA1tests :: IO ()
 runA1tests = do
   putStrLn "A1 minimum':"
@@ -591,3 +720,16 @@ runA7tests = do
   putStrLn ("Take 5, Chars: ['X','y','s'], Expected Output: ['X','Y','S','XX','YY'], Success: " ++ show (testA7_f_tranf 5 ['X', 'y', 's'] ["X", "Y", "S", "XX", "YY"]))
   putStrLn ("Take 15, Chars: ['X','y','s'], Expected Output: ['X',..,'SSS'], Success: " ++ show (testA7_f_tranf 15 ['X', 'y', 's'] ["X", "Y", "S", "XX", "YY", "SS", "XXX", "XYX", "XSX", "YXY", "YYY", "YSY", "SXS", "SYS", "SSS"]))
   putStrLn ("Take 5, Chars: [], Expected Output: [], Success: " ++ show (testA7_f_tranf 5 [] []))
+
+-- A.8
+runA8tests :: IO ()
+runA8tests = do
+  putStrLn "\nA8 solveMA2412Problem:"
+  putStrLn ("\nn=5 and solveable, Result: " ++ show (solveMA2412Problem beispiel1))
+  putStrLn ("\nn=5 and already solved, Result: " ++ show (solveMA2412Problem beispiel2))
+  putStrLn ("\nn=5 and not accepted values, Result: " ++ show (solveMA2412Problem beispiel3))
+  putStrLn ("\nn=5 and not square area, Result: " ++ show (solveMA2412Problem beispiel4))
+  putStrLn ("\nn=5 and not solveable, Result: " ++ show (solveMA2412Problem beispiel5))
+  putStrLn ("\nn=5 and no given values, Result: " ++ show (solveMA2412Problem beispiel6))
+  putStrLn ("\nn=10 and not solveable (many given values), Result: " ++ show (solveMA2412Problem beispiel7))
+  putStrLn ("\nn=10 and no given values, Result: " ++ show (solveMA2412Problem beispiel8))
